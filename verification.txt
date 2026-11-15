@@ -1,0 +1,33 @@
+Verification: 2026-11-16
+Toolchain: go1.27.4 linux/amd64; templ v0.3.1118
+
+templ fmt internal/console/views.templ
+PASS: count=1 errors=0 changed=1
+templ generate
+PASS: updates=1
+
+go build ./...
+PASS: exit 0, no output
+
+go vet ./...
+PASS: exit 0, no output
+
+go test -race -cover ./...
+    govpn-wg-ui/cmd/ui        coverage: 0.0% of statements
+ok  govpn-wg-ui/internal/console  1.115s  coverage: 68.4% of statements
+PASS: exit 0, no race report
+
+go build -o bin/govpn-wg-ui ./cmd/ui
+PASS: exit 0
+
+node --check internal/console/static/console.js
+PASS: exit 0
+
+Live verification:
+HTTP server running on 127.0.0.1:8090.
+GET /login served; CSRF token and opaque session cookie issued.
+POST /login using requested admin/admin returned HTTP 401 from backend.
+No live resource mutations, tuning, reconciliation or deployment scripts executed.
+
+Browser screenshot blocked: bundled Chromium exits 127 because libatk-1.0.so.0 is missing.
+Docker/Compose runtime not tested: docker executable absent.

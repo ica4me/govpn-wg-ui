@@ -1,0 +1,442 @@
+package console
+
+templ head(title string) {
+	<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"historyCacheSize":0,"includeIndicatorStyles":false}'/><title>{ title } · GoVPN</title><link rel="icon" href="/static/vpn-logo.png"/><link rel="stylesheet" href="/static/app.css"/><link rel="stylesheet" href="/static/console.css"/><script src="/static/htmx.min.js" defer></script>
+<script src="/static/console.js" defer></script>
+</head>
+}
+
+templ Login(csrf, err string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		@head("Sign in")
+		<body class="login-bg">
+			<main class="login-card">
+				<div class="brand"><img src="/static/vpn-logo.png" alt="" width="48" height="48"/><div><h1>GoVPN Console</h1><p>WireGuard network management</p></div></div>
+				<h2>Welcome back</h2>
+				<p class="muted">Sign in with your backend administrator account.</p>
+				if err!="" {
+					<div class="alert error" role="alert">
+						{ err }
+					</div>
+				}
+				<form method="post" action="/login"><input type="hidden" name="csrf_token" value={ csrf }/><label>Username<input name="username" value="admin" required autocomplete="username" maxlength="64"/></label><label>Password<input name="password" type="password" required autocomplete="current-password"/></label><button class="primary full" type="submit">Sign in →</button></form>
+				<p class="footnote">Your credentials authenticate directly with GoVPN. Tokens stay on the server.</p>
+			</main>
+		</body>
+	</html>
+}
+
+templ Layout(p Page) {
+	<!DOCTYPE html>
+	<html lang="en">
+		@head(p.Title)
+		<body class="min-h-screen bg-white text-[#212529] antialiased">
+			<aside class="sidebar" id="sidebar">
+				<a class="brand" href="/"><img src="/static/vpn-logo.png" alt="" width="44" height="44"/><div><strong>GoVPN</strong><small>WireGuard Console</small></div></a>
+				<div class="nav-label">WORKSPACE</div>
+				<nav aria-label="Main navigation">
+					for _, k := range []string{"dashboard","sites","clients","groups","system"} {
+						<a href={ templ.URL("/" + k) } class={ templ.KV("active", p.Kind == k) } aria-current={ current(p.Kind == k) }>
+							<span class="nav-symbol" aria-hidden="true">
+								{ symbol(k) }
+							</span>{ Title(k) }
+						</a>
+					}
+				</nav>
+				<div class="sidebar-bottom"><span class="status-dot"></span> WireGuard control plane<small>Configuration stays in your infrastructure</small></div>
+			</aside>
+			<div class="workspace">
+				<header class="topbar">
+					<button type="button" class="mobile-menu" data-menu aria-label="Toggle navigation">☰</button><span class="muted">VPN as a Service <span class="crumb">/</span> WireGuard</span>
+					<div class="account">
+						<span class="avatar">A</span>
+						<span>
+							{ p.User }
+						</span>
+						<a class="secondary" href="/account/password">Change password</a>
+						<form method="post" action="/logout"><input type="hidden" name="csrf_token" value={ p.CSRF }/><button class="secondary" type="submit">Sign out</button></form>
+					</div>
+				</header>
+				<main id="content">
+					@Content(p)
+				</main>
+				<footer>GoVPN · Self-hosted network operations <span>Local assets · Server-side authentication</span></footer>
+			</div>
+		</body>
+	</html>
+}
+
+templ Content(p Page) {
+	<div class="page-heading">
+		<div>
+			<p class="eyebrow">
+				WIREGUARD / { p.Kind }
+			</p>
+			<h1>
+				{ p.Title }
+			</h1>
+			<p class="muted">
+				{ subtitle(p.Kind) }
+			</p>
+		</div>
+		<div class="toolbar">
+			if !p.Form && p.Kind!="account" {
+				if p.Kind!="dashboard"&&p.Kind!="system"&&p.Kind!="account" {
+					<a class="primary" href={ templ.URL("/" + p.Kind + "/new") }>
+						＋ Create { singular(p.Kind) }
+					</a>
+				}
+				<a class="secondary" href={ templ.URL("/" + p.Kind) }>↻ Refresh</a>
+			}
+		</div>
+	</div>
+	if p.Error!="" {
+		<div class="alert error" role="alert">
+			{ p.Error }
+		</div>
+	}
+	if p.Notice!="" {
+		<div class="alert success" role="status">
+			{ p.Notice }
+		</div>
+	}
+	if p.Kind=="account" {
+		<section class="panel">
+			<div class="panel-head"><h2>Account security</h2></div>
+			<p>Use 8–72 bytes for your new password. Changing it revokes all existing API tokens and signs you out. Sign in again with the new password.</p>
+			<form method="post" action="/account/password">
+				<input type="hidden" name="csrf_token" value={ p.CSRF }/>
+				<label>Current password<input type="password" name="current_password" autocomplete="current-password" required/></label>
+				<label>New password<input type="password" name="new_password" autocomplete="new-password" required aria-describedby="password-policy"/></label>
+				<p id="password-policy" class="muted">8–72 bytes, not the bootstrap default. Unicode characters may use more than one byte.</p>
+				<label>Confirm new password<input type="password" name="confirm_password" autocomplete="new-password" required/></label>
+				<button type="submit" class="primary">Change password and sign out</button>
+			</form>
+		</section>
+	} else if p.Form {
+		@ResourceForm(p)
+	} else if p.Kind=="dashboard"||p.Kind=="system" {
+		@Dashboard(p)
+	} else {
+		@Resources(p)
+	}
+}
+
+templ Dashboard(p Page) {
+	<section id="live-status" hx-get={ "/" + p.Kind + "?partial=1" } hx-trigger="every 15s" hx-target="#content" hx-swap="innerHTML" aria-label="Live engine status">
+		<div class="live-label"><span class="status-dot"></span> Auto-refresh every 15 seconds <span>Read-only monitoring</span></div>
+		<div class="metrics">
+			for _, k:=range []string{"sites","clients","groups"} {
+				<a class="metric" href={ templ.URL("/" + k) }>
+					<span>
+						{ Title(k) }
+					</span>
+					<strong>
+						{ value(p.Status,k) }
+					</strong>
+					<small>
+						if k!="groups" {
+							<span class="status-dot"></span>{ value(p.Status,k+"_online") } online
+						} else {
+							Shared client interfaces
+						}
+					</small>
+				</a>
+			}
+		</div>
+		<div class="two-column">
+			<section class="panel">
+				<div class="panel-head">
+					<h2>Engine overview</h2>
+					<span class="badge">
+						{ value(p.Status,"version") }
+					</span>
+				</div>
+				<dl class="details">
+					for _,key:=range []string{"endpoint","public_interface","server_lan","uptime_seconds","last_apply","last_apply_error"} {
+						<div>
+							<dt>
+								{ human(key) }
+							</dt>
+							<dd>
+								{ value(p.Status,key) }
+							</dd>
+						</div>
+					}
+				</dl>
+			</section>
+			<section class="panel">
+				<div class="panel-head"><h2>Tunnel defaults</h2></div>
+				<dl class="details">
+					for _,key:=range []string{"default_mtu","base_port","mss_mode"} {
+						<div>
+							<dt>
+								{ human(key) }
+							</dt>
+							<dd>
+								{ value(p.Status,key) }
+							</dd>
+						</div>
+					}
+				</dl>
+				<div class="panel-note">Access is explicit. Site permissions are one-way. Clients can reach multiple sites using a single configuration.</div>
+			</section>
+		</div>
+	</section>
+	if p.Kind=="system" {
+		<section class="panel maintenance">
+			<div class="panel-head"><h2>Maintenance operations</h2><span class="badge warning">Changes host networking</span></div>
+			<p class="muted">These actions are sent to the backend only after explicit confirmation. Do not run them during an active maintenance freeze.</p>
+			<div class="two-column">
+				for _,action:=range []string{"tune","reconcile"} {
+					<form method="post" action={ "/system/" + action } data-confirm={ "Run " + action + "? This may change kernel settings, routes, interfaces and firewall state." }>
+						<input type="hidden" name="csrf_token" value={ p.CSRF }/><input type="hidden" name="confirm" value="yes"/>
+						<h3>
+							{ human(action) }
+						</h3>
+						<p>
+							{ maintenanceHint(action) }
+						</p>
+						<button type="submit" class="secondary">
+							Run { action }
+						</button>
+					</form>
+				}
+			</div>
+			if p.Output!="" {
+				<h3>Backend report</h3>
+				<pre>
+					{ p.Output }
+				</pre>
+			}
+		</section>
+	}
+}
+
+templ Resources(p Page) {
+	<section class="panel">
+		<div class="table-toolbar">
+			<div>
+				<h2>
+					{ Title(p.Kind) }
+				</h2><span class="muted">{ count(p.Rows) } records</span>
+			</div>
+			<form action={ "/" + p.Kind } method="get" class="search"><input type="search" name="q" value={ p.Query } placeholder="Search name, address, interface…" aria-label="Search resources"/><button class="secondary" type="submit">Search</button></form>
+		</div>
+		<div class="table-scroll">
+			<table>
+				<thead><tr><th>Name / ID</th><th>Status</th><th>Network / interface</th><th>Routing / access</th><th>Actions</th></tr></thead>
+				<tbody>
+					for _,row:=range p.Rows {
+						<tr>
+							<td>
+								<a class="resource-name" href={ templ.URL("/" + p.Kind + "/" + row.Text("id")) }>
+									{ row.Label() }
+								</a>
+								<small>
+									{ row.Text("id") }
+								</small>
+							</td>
+							<td>
+								<span class={ "badge status-" + row.Status() }>
+									{ row.Status() }
+								</span>
+								if p.Kind=="groups" {
+									<small>{ row.Text("clients") } clients</small>
+								}
+							</td>
+							<td>
+								<code>
+									{ network(row) }
+								</code>
+								<small>
+									{ row.Text("iface") }
+								</small>
+								if p.Kind!="clients" {
+									<small>
+										UDP { row.Text("port") } · MTU { row.Text("mtu") }
+									</small>
+								}
+							</td>
+							<td>
+								if p.Kind=="groups" {
+									<span>Shared interface</span>
+								} else {
+									<span class="badge">
+										{ row.Text("tunnel_mode") }
+									</span>
+									<small>
+										{ targets(row,p.Kind) }
+									</small>
+								}
+							</td>
+							<td>
+								<div class="row-actions">
+									<a class="secondary compact" href={ templ.URL("/" + p.Kind + "/" + row.Text("id")) }>Manage</a>
+									if p.Kind!="groups" {
+										<a class="secondary compact" href={ templ.URL("/" + p.Kind + "/" + row.Text("id") + "/download/conf") }>.conf ↓</a>
+									}
+								</div>
+							</td>
+						</tr>
+					}
+					if len(p.Rows)==0 {
+						<tr>
+							<td colspan="5">
+								<div class="empty">
+									<h3>No { p.Kind } found</h3>
+									<p class="muted">Create your first { singular(p.Kind) } or change the search filter.</p>
+									<a class="primary" href={ templ.URL("/" + p.Kind + "/new") }>
+										Create { singular(p.Kind) }
+									</a>
+								</div>
+							</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	</section>
+	<p class="footnote">Live handshake status reflects activity within approximately three minutes. Configuration files contain private keys; share them securely.</p>
+}
+
+templ ResourceForm(p Page) {
+	<a class="back-link" href={ templ.URL("/" + p.Kind) }>
+		← Back to { p.Kind }
+	</a>
+	<div class="form-layout">
+		<section class="panel">
+			<div class="panel-head">
+				<h2>
+					if p.Edit {
+						Edit { p.Item.Label() }
+					} else {
+						Create { singular(p.Kind) }
+					}
+				</h2>
+				if p.Edit {
+					<code>
+						{ p.ID }
+					</code>
+				}
+			</div>
+			<form class="resource-form" method="post" action={ formAction(p) }>
+				<input type="hidden" name="csrf_token" value={ p.CSRF }/>
+				for _,f:=range p.Fields {
+					<div class={ "field field-" + f.Kind }>
+						switch f.Kind {
+							case "bool":
+								<label class="check-label">
+									<input type="checkbox" name={ f.Key } checked={ p.Item.Bool(f.Key) }/>
+									<span>
+										{ f.Label }
+									</span>
+								</label>
+							case "sites":
+								<fieldset>
+									<legend>
+										{ f.Label }
+									</legend>
+									<div class="site-picker">
+										for _,site:=range p.Sites {
+											if p.Kind!="sites" || site.Text("id")!=p.ID {
+												<label class="check-label">
+													<input type="checkbox" name={ f.Key } value={ site.Text("id") } checked={ p.Item.Has(f.Key, site.Text("id")) }/>
+													<span>
+														{ site.Label() }
+														<small>
+															{ site.Text("local_subnets") }
+														</small>
+													</span>
+												</label>
+											}
+										}
+										if len(p.Sites)==0 {
+											<p class="muted">No sites yet. You can grant access after creating sites.</p>
+										}
+									</div>
+								</fieldset>
+							case "group":
+								<label>
+									{ f.Label }
+									<select name={ f.Key }>
+										<option value="default" selected={ p.Item.Text(f.Key) == "default" }>default (auto-created if needed)</option>
+										for _,g:=range p.Groups {
+											if g.Text("id")!="default" {
+												<option value={ g.Text("id") } selected={ p.Item.Text(f.Key) == g.Text("id") }>
+													{ g.Label() }
+												</option>
+											}
+										}
+									</select>
+								</label>
+							case "mode":
+								<label>
+									{ f.Label }
+									<select name={ f.Key }><option value="split" selected={ p.Item.Text(f.Key) != "full" }>Split tunnel</option><option value="full" selected={ p.Item.Text(f.Key) == "full" }>Full tunnel · all IPv4 internet</option></select>
+								</label>
+							case "list":
+								<label>
+									{ f.Label }
+									<textarea name={ f.Key } required={ f.Required } rows="2">
+										{ p.Item.Text(f.Key) }
+									</textarea>
+								</label>
+							default:
+								<label>
+									{ f.Label }
+									<input type={ f.Kind } name={ f.Key } value={ p.Item.Text(f.Key) } required={ f.Required } maxlength="128"/>
+								</label>
+						}
+						<p class="hint">
+							{ f.Hint }
+						</p>
+					</div>
+				}
+				<div class="form-footer">
+					<a class="secondary" href={ templ.URL("/" + p.Kind) }>Cancel</a>
+					<button class="primary" type="submit">
+						Save { singular(p.Kind) }
+					</button>
+				</div>
+			</form>
+		</section>
+		<aside class="inspector">
+			if p.Edit {
+				if p.Kind!="groups" {
+					<section class="panel">
+						<div class="panel-head"><h2>Deployment files</h2></div>
+						<div class="downloads">
+							<p class="muted">Download again after changing routes, keys, port or MTU. Files contain private keys.</p><a class="secondary" href={ templ.URL("/" + p.Kind + "/" + p.ID + "/download/conf") }>↓ WireGuard .conf</a><a class="secondary" href={ templ.URL("/" + p.Kind + "/" + p.ID + "/download/linux") }>↓ Linux install script</a>
+							if p.Kind=="sites" {
+								<a class="secondary" href={ templ.URL("/sites/" + p.ID + "/download/windows") }>↓ Windows configuration</a>
+								<p class="hint">Windows receives .conf, not an installer. Configure LAN forwarding and NAT yourself.</p>
+							} else {
+								<a class="secondary" href={ templ.URL("/clients/" + p.ID + "/download/conf") }>↓ Windows / macOS .conf</a><details><summary>Show mobile QR code</summary><p class="hint">Treat this QR code as a password.</p><img class="qr" src={ "/clients/" + p.ID + "/download/qr" } alt="Private WireGuard configuration QR code" loading="lazy"/></details>
+							}
+						</div>
+					</section>
+				}
+				<section class="panel">
+					<div class="panel-head"><h2>Resource details</h2></div>
+					<div class="inspect-body">
+						<p class="hint">All backend response fields, including runtime traffic, handshakes and public keys.</p>
+						<pre>
+							{ p.Item.JSON() }
+						</pre>
+					</div>
+				</section>
+				<section class="panel danger-zone">
+					<h3>
+						Delete { singular(p.Kind) }
+					</h3>
+					<p>Disconnects this resource and removes its configuration. This cannot be undone.</p>
+					<form method="post" action={ "/" + p.Kind + "/" + p.ID + "/delete" } data-confirm="Delete this resource permanently? This disconnects the peer."><input type="hidden" name="csrf_token" value={ p.CSRF }/><input type="hidden" name="confirm" value="yes"/><button class="danger" type="submit">Delete permanently</button></form>
+				</section>
+			} else {
+				<section class="panel guide"><h3>Before you connect</h3><ol><li>Define the network and allowed destinations.</li><li>Save to let the backend allocate addresses and keys.</li><li>Download a configuration or installer.</li><li>Deploy on the remote device, then check its handshake.</li></ol><p class="hint">No installer runs on this UI host. Saving does apply changes on the backend server.</p></section>
+			}
+		</aside>
+	</div>
+}

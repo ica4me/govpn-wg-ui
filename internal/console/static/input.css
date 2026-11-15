@@ -1,0 +1,10 @@
+/* Local Tailwind base is inherited from the supplied VPNaaS reference.
+   Optional rebuild: npx @tailwindcss/cli -i internal/console/static/input.css -o internal/console/static/app.css --minify
+   Keep console.css after this stylesheet for component overrides. */
+@import "tailwindcss" source(none);
+@source "../*.templ";
+@source "../*.go";
+@theme {
+ --font-sans: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+ --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+}

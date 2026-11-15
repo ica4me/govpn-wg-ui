@@ -1,0 +1,15 @@
+services:
+  ui:
+    build:
+      context: .
+      network: host
+    network_mode: host
+    restart: unless-stopped
+    user: '65532:65532'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    environment:
+      GOVPN_API_URL: '${GOVPN_API_URL:-http://127.0.0.1:8080/api/v1}'
+      GOVPN_UI_LISTEN: '${GOVPN_UI_LISTEN:-127.0.0.1:8090}'
+      GOVPN_COOKIE_SECURE: '${GOVPN_COOKIE_SECURE:-false}'
