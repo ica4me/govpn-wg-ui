@@ -3,7 +3,7 @@ document.addEventListener('click', function(e) {
  const trigger=e.target.closest('[popovertarget]');
  if(trigger){
   const menu=document.getElementById(trigger.getAttribute('popovertarget'));
-  if(menu){const r=trigger.getBoundingClientRect();menu.style.left=Math.max(8,Math.min(r.right-180,window.innerWidth-188))+'px';menu.style.top=Math.max(8,Math.min(r.bottom+4,window.innerHeight-120))+'px';}
+  if(menu){const r=trigger.getBoundingClientRect();menu.style.left=Math.max(8,Math.min(r.right-240,window.innerWidth-248))+'px';menu.style.top=Math.max(8,Math.min(r.bottom+4,window.innerHeight-210))+'px';}
  }
  const item=e.target.closest('.action-popover a');
  if(item) item.closest('.action-popover').hidePopover();

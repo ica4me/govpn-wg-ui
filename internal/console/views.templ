@@ -277,7 +277,13 @@ templ Resources(p Page) {
 									<div id={ "actions-" + p.Kind + "-" + row.Text("id") } popover="auto" class="action-popover">
 									<a class="secondary compact" href={ templ.URL("/" + p.Kind + "/" + row.Text("id")) }>Manage</a>
 									if p.Kind!="groups" {
-										<a class="secondary compact" href={ templ.URL("/" + p.Kind + "/" + row.Text("id") + "/download/conf") }>.conf ↓</a>
+										<a class="secondary compact" href={ templ.URL("/" + p.Kind + "/" + row.Text("id") + "/download/conf") }>↓ WireGuard .conf</a>
+										<a class="secondary compact" href={ templ.URL("/" + p.Kind + "/" + row.Text("id") + "/download/linux") }>↓ Linux install script</a>
+										if p.Kind=="sites" {
+											<a class="secondary compact" href={ templ.URL("/sites/" + row.Text("id") + "/download/windows") }>↓ Windows configuration</a>
+										} else {
+											<a class="secondary compact" href={ templ.URL("/clients/" + row.Text("id") + "/download/conf") }>↓ Windows configuration</a>
+										}
 									}
 									</div>
 								</div>
