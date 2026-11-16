@@ -53,7 +53,7 @@ func subtitle(k string) string {
 	}
 }
 func human(k string) string {
-	m := map[string]string{"endpoint": "Public endpoint", "public_interface": "Public interface", "server_lan": "Server LAN", "uptime_seconds": "Uptime GoVPN Service (day:hour:menit)", "server_uptime_seconds": "Server Uptime (day:hour:menit)", "last_apply": "Last applied", "last_apply_error": "Last apply error", "default_mtu": "Default MTU", "base_port": "Base UDP port", "mss_mode": "MSS mode", "tune": "Kernel & NIC tuning", "reconcile": "Reconcile state"}
+	m := map[string]string{"endpoint": "Public endpoint", "public_interface": "Public interface", "server_lan": "Server LAN", "uptime_seconds": "Uptime GoVPN Service", "server_uptime_seconds": "Server Uptime", "last_apply": "Last applied", "last_apply_error": "Last apply error", "default_mtu": "Default MTU", "base_port": "Base UDP port", "mss_mode": "MSS mode", "tune": "Kernel & NIC tuning", "reconcile": "Reconcile state"}
 	if s := m[k]; s != "" {
 		return s
 	}

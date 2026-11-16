@@ -169,6 +169,9 @@ templ Dashboard(p Page) {
 								{ human(key) }
 							</dt>
 							<dd>
+								if key=="uptime_seconds" || key=="server_uptime_seconds" {
+									<small class="uptime-format">DD:HH:MM</small>
+								}
 								{ value(p.Status,key) }
 							</dd>
 						</div>

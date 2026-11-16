@@ -13,10 +13,10 @@ func TestDashboardUptimeFormatting(t *testing.T) {
 			}
 		}
 	}
-	if human("uptime_seconds") != "Uptime GoVPN Service (day:hour:menit)" {
+	if human("uptime_seconds") != "Uptime GoVPN Service" {
 		t.Fatal("service label")
 	}
-	if human("server_uptime_seconds") != "Server Uptime (day:hour:menit)" {
+	if human("server_uptime_seconds") != "Server Uptime" {
 		t.Fatal("server label")
 	}
 }
