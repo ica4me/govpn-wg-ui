@@ -4,6 +4,12 @@ Web UI untuk mengelola [GoVPN WireGuard Backend](https://github.com/ica4me/govpn
 
 Dibuat dengan **Go + Templ + HTMX + Tailwind CSS**, dijalankan menggunakan Docker Compose.
 
+## Topologi koneksi
+
+![Topologi koneksi GoVPN: UI, REST API, WireGuard hub, client, dan site](docs/images/topology.svg)
+
+UI bersifat opsional. Garis kontrol mengelola hub; trafik VPN lewat WireGuard. Default **split-tunnel**, akses antar-site dan LAN mengikuti izin yang dipilih.
+
 ## 1. Install tools dan Docker
 
 Untuk server Linux Debian/Ubuntu baru:
@@ -66,6 +72,19 @@ Update dan paksa buat ulang container:
 git pull --ff-only
 sudo docker compose up -d --build --force-recreate
 ```
+
+## Ganti atau lupa login
+
+Klik **Account** di kanan atas untuk mengganti username, password, atau keduanya. Setelah disimpan, semua sesi keluar dan kamu login lagi dengan data baru.
+
+Kalau lupa username atau password, reset di **server backend**:
+
+```bash
+sudo /opt/govpn/wg/govpn-wg reset-admin
+sudo systemctl restart govpn-wg
+```
+
+Login kembali menjadi **admin / admin**, lalu UI langsung meminta password baru. Tunnel dan data VPN tidak berubah. Detailnya ada di [dokumentasi backend](https://github.com/ica4me/govpn-wg/blob/main/docs/api/auth.md).
 
 ## Screenshot
 

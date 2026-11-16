@@ -47,7 +47,7 @@ func subtitle(k string) string {
 	case "system":
 		return "Inspect engine configuration and deliberately run maintenance operations."
 	case "account":
-		return "Update your administrator password and revoke previous sign-ins."
+		return "Change the administrator username and password. Saving signs out every session."
 	default:
 		return "Your network at a glance. Live state from the GoVPN control plane."
 	}

@@ -54,7 +54,7 @@ templ Layout(p Page) {
 						<span>
 							{ p.User }
 						</span>
-						<a class="secondary" href="/account/password">Change password</a>
+						<a class="secondary" href="/account/password">Account</a>
 						<form method="post" action="/logout"><input type="hidden" name="csrf_token" value={ p.CSRF }/><button class="secondary" type="submit">Sign out</button></form>
 					</div>
 				</header>
@@ -87,7 +87,7 @@ templ Content(p Page) {
 						＋ Create { singular(p.Kind) }
 					</a>
 				}
-				<a class="secondary" href={ templ.URL("/" + p.Kind) }>↻ Refresh</a>
+				<a class="secondary refresh-btn" href={ templ.URL("/" + p.Kind) } data-refresh><span class="refresh-icon" aria-hidden="true">↻</span><span class="refresh-label">Refresh</span></a>
 			}
 		</div>
 	</div>
@@ -102,17 +102,22 @@ templ Content(p Page) {
 		</div>
 	}
 	if p.Kind=="account" {
-		<section class="panel">
+		<section class="panel account-panel">
 			<div class="panel-head"><h2>Account security</h2></div>
-			<p>Use 8–72 bytes for your new password. Changing it revokes all existing API tokens and signs you out. Sign in again with the new password.</p>
-			<form method="post" action="/account/password">
-				<input type="hidden" name="csrf_token" value={ p.CSRF }/>
-				<label>Current password<input type="password" name="current_password" autocomplete="current-password" required/></label>
-				<label>New password<input type="password" name="new_password" autocomplete="new-password" required aria-describedby="password-policy"/></label>
-				<p id="password-policy" class="muted">8–72 bytes, not the bootstrap default. Unicode characters may use more than one byte.</p>
-				<label>Confirm new password<input type="password" name="confirm_password" autocomplete="new-password" required/></label>
-				<button type="submit" class="primary">Change password and sign out</button>
-			</form>
+			<div class="account-body">
+				<p class="muted">GoVPN has one administrator. Change the username, the password, or both. Saving revokes every existing sign-in and API token, then signs you out so you can sign in with the new details.</p>
+				<form method="post" action="/account/password" class="account-form">
+					<input type="hidden" name="csrf_token" value={ p.CSRF }/>
+					<label>Current password<input type="password" name="current_password" autocomplete="current-password" required/></label>
+					<label>Username<input type="text" name="new_username" value={ p.Item.Text("username") } autocomplete="username" maxlength="64" required aria-describedby="username-policy"/></label>
+					<p id="username-policy" class="hint">{ "1–64 characters: letters, numbers, _ . @ -" }</p>
+					<label>New password<input type="password" name="new_password" autocomplete="new-password" required?={ p.ForceChange } aria-describedby="password-policy"/></label>
+					<p id="password-policy" class="hint">8–72 bytes, not the bootstrap default. Leave blank to keep the current password when you only change the username.</p>
+					<label>Confirm new password<input type="password" name="confirm_password" autocomplete="new-password"/></label>
+					<div class="form-footer"><button type="submit" class="primary">Save and sign out</button></div>
+				</form>
+				<p class="hint">Forgot the login? Run <code>sudo govpn-wg reset-admin</code> on the backend server and restart the service. The login returns to admin / admin and must be changed at the next sign-in.</p>
+			</div>
 		</section>
 	} else if p.Form {
 		@ResourceForm(p)

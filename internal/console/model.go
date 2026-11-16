@@ -97,7 +97,7 @@ type Page struct {
 	Rows, Sites, Groups                               []Record
 	Item, Status                                      Record
 	Fields                                            []Field
-	Edit, Form                                        bool
+	Edit, Form, ForceChange                           bool
 	Output                                            string
 }
 
