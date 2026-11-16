@@ -2,6 +2,7 @@ package console
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -52,7 +53,7 @@ func subtitle(k string) string {
 	}
 }
 func human(k string) string {
-	m := map[string]string{"endpoint": "Public endpoint", "public_interface": "Public interface", "server_lan": "Server LAN", "uptime_seconds": "Uptime (seconds)", "last_apply": "Last applied", "last_apply_error": "Last apply error", "default_mtu": "Default MTU", "base_port": "Base UDP port", "mss_mode": "MSS mode", "tune": "Kernel & NIC tuning", "reconcile": "Reconcile state"}
+	m := map[string]string{"endpoint": "Public endpoint", "public_interface": "Public interface", "server_lan": "Server LAN", "uptime_seconds": "Uptime GoVPN Service (day:hour:menit)", "server_uptime_seconds": "Server Uptime (day:hour:menit)", "last_apply": "Last applied", "last_apply_error": "Last apply error", "default_mtu": "Default MTU", "base_port": "Base UDP port", "mss_mode": "MSS mode", "tune": "Kernel & NIC tuning", "reconcile": "Reconcile state"}
 	if s := m[k]; s != "" {
 		return s
 	}
@@ -63,6 +64,14 @@ func value(r Record, k string) string {
 		return "—"
 	}
 	v := r.Text(k)
+	if k == "uptime_seconds" || k == "server_uptime_seconds" {
+		seconds, err := strconv.ParseFloat(v, 64)
+		if err != nil || seconds < 0 {
+			return "—"
+		}
+		minutes := int64(seconds / 60)
+		return fmt.Sprintf("%d:%02d:%02d", minutes/1440, minutes/60%24, minutes%60)
+	}
 	if v == "" {
 		if k == "last_apply_error" {
 			return "None reported"

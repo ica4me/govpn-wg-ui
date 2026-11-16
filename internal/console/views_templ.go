@@ -502,7 +502,7 @@ func Dashboard(p Page) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\" hx-trigger=\"every 15s\" hx-target=\"#content\" hx-swap=\"innerHTML\" aria-label=\"Live engine status\"><div class=\"live-label\"><span class=\"status-dot\"></span> Auto-refresh every 15 seconds <span>Read-only monitoring</span></div><div class=\"metrics\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\" hx-trigger=\"every 60s\" hx-target=\"#content\" hx-swap=\"innerHTML\" aria-label=\"Live engine status\"><div class=\"live-label\"><span class=\"status-dot\"></span> Auto-refresh every 1 minute <span>Read-only monitoring</span></div><div class=\"metrics\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -596,7 +596,7 @@ func Dashboard(p Page) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		for _, key := range []string{"endpoint", "public_interface", "server_lan", "uptime_seconds", "last_apply", "last_apply_error"} {
+		for _, key := range []string{"endpoint", "public_interface", "server_lan", "uptime_seconds", "server_uptime_seconds", "last_apply", "last_apply_error"} {
 			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 50, "<div><dt>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
