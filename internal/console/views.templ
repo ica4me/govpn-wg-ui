@@ -61,7 +61,7 @@ templ Layout(p Page) {
 				<main id="content">
 					@Content(p)
 				</main>
-				<footer>GoVPN · Self-hosted network operations <span>Local assets · Server-side authentication</span></footer>
+				<footer>GoVPN UI { Version } · Self-hosted network operations <span>Local assets · Server-side authentication</span></footer>
 			</div>
 		</body>
 	</html>
@@ -336,12 +336,20 @@ templ ResourceForm(p Page) {
 					<div class={ "field field-" + f.Kind }>
 						switch f.Kind {
 							case "bool":
-								<label class="check-label">
-									<input type="checkbox" name={ f.Key } checked={ p.Item.Bool(f.Key) }/>
-									<span>
-										{ f.Label }
-									</span>
-								</label>
+								<div class="check-row">
+									<label class="check-label">
+										<input type="checkbox" name={ f.Key } checked?={ p.Item.Bool(f.Key) }/>
+										<span>
+											{ f.Label }
+										</span>
+									</label>
+									if f.Key == "allow_server_lan" || f.Key == "can_access_server_lan" {
+										<details class="field-info">
+											<summary aria-label={ "More information about " + f.Label }>i</summary>
+											<p>Another local subnet in server</p>
+										</details>
+									}
+								</div>
 							case "sites":
 								<fieldset>
 									<legend>
@@ -351,7 +359,7 @@ templ ResourceForm(p Page) {
 										for _,site:=range p.Sites {
 											if p.Kind!="sites" || site.Text("id")!=p.ID {
 												<label class="check-label">
-													<input type="checkbox" name={ f.Key } value={ site.Text("id") } checked={ p.Item.Has(f.Key, site.Text("id")) }/>
+													<input type="checkbox" name={ f.Key } value={ site.Text("id") } checked?={ p.Item.Has(f.Key, site.Text("id")) }/>
 													<span>
 														{ site.Label() }
 														<small>
@@ -370,10 +378,10 @@ templ ResourceForm(p Page) {
 								<label>
 									{ f.Label }
 									<select name={ f.Key }>
-										<option value="default" selected={ p.Item.Text(f.Key) == "default" }>default (auto-created if needed)</option>
+										<option value="default" selected?={ p.Item.Text(f.Key) == "default" }>default (auto-created if needed)</option>
 										for _,g:=range p.Groups {
 											if g.Text("id")!="default" {
-												<option value={ g.Text("id") } selected={ p.Item.Text(f.Key) == g.Text("id") }>
+												<option value={ g.Text("id") } selected?={ p.Item.Text(f.Key) == g.Text("id") }>
 													{ g.Label() }
 												</option>
 											}
@@ -383,19 +391,19 @@ templ ResourceForm(p Page) {
 							case "mode":
 								<label>
 									{ f.Label }
-									<select name={ f.Key }><option value="split" selected={ p.Item.Text(f.Key) != "full" }>Split tunnel</option><option value="full" selected={ p.Item.Text(f.Key) == "full" }>Full tunnel · all IPv4 internet</option></select>
+									<select name={ f.Key }><option value="split" selected?={ p.Item.Text(f.Key) != "full" }>Split tunnel</option><option value="full" selected?={ p.Item.Text(f.Key) == "full" }>Full tunnel · all IPv4 internet</option></select>
 								</label>
 							case "list":
 								<label>
 									{ f.Label }
-									<textarea name={ f.Key } required={ f.Required } rows="2">
+									<textarea name={ f.Key } required?={ f.Required } rows="2">
 										{ p.Item.Text(f.Key) }
 									</textarea>
 								</label>
 							default:
 								<label>
 									{ f.Label }
-									<input type={ f.Kind } name={ f.Key } value={ p.Item.Text(f.Key) } required={ f.Required } maxlength="128"/>
+									<input type={ f.Kind } name={ f.Key } value={ p.Item.Text(f.Key) } required?={ f.Required } maxlength="128"/>
 								</label>
 						}
 						<p class="hint">
