@@ -22,6 +22,9 @@ func main() {
 	if e != nil {
 		log.Fatal(e)
 	}
+	if e = app.SetTrustedProxies(os.Getenv("GOVPN_TRUSTED_PROXY_CIDRS")); e != nil {
+		log.Fatal(e)
+	}
 	srv := &http.Server{Addr: env("GOVPN_UI_LISTEN", "127.0.0.1:8090"), Handler: app.Handler(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

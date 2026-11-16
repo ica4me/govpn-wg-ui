@@ -7,6 +7,9 @@ import (
 
 func (s *Server) password(w http.ResponseWriter, r *http.Request, id string, v Session) {
 	p := Page{Title: "Change password", Kind: "account", CSRF: v.CSRF, User: v.User}
+	if v.RequiresPasswordChange {
+		p.Notice = "You must change your password before using the console."
+	}
 	if r.Method == http.MethodPost {
 		current, next := r.PostFormValue("current_password"), r.PostFormValue("new_password")
 		switch {

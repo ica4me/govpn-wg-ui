@@ -13,6 +13,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"strconv"
 	"strings"
@@ -24,15 +25,18 @@ import (
 var assets embed.FS
 
 type Session struct {
-	Token, CSRF, User string
-	Expiry            time.Time
+	RequiresPasswordChange bool
+	Token, CSRF, User      string
+	Expiry                 time.Time
 }
 type Server struct {
-	base     string
-	client   *http.Client
-	secure   bool
-	mu       sync.Mutex
-	sessions map[string]Session
+	base           string
+	client         *http.Client
+	secure         bool
+	mu             sync.Mutex
+	logins         loginLimiter
+	trustedProxies []netip.Prefix
+	sessions       map[string]Session
 }
 
 func New(base string, secure bool) (*Server, error) {
@@ -40,7 +44,7 @@ func New(base string, secure bool) (*Server, error) {
 	if e != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
 		return nil, errors.New("invalid backend URL")
 	}
-	return &Server{base: strings.TrimRight(base, "/"), secure: secure, client: &http.Client{Timeout: 20 * time.Second, CheckRedirect: func(r *http.Request, via []*http.Request) error { return http.ErrUseLastResponse }}, sessions: map[string]Session{}}, nil
+	return &Server{base: strings.TrimRight(base, "/"), secure: secure, client: &http.Client{Timeout: 20 * time.Second, CheckRedirect: func(r *http.Request, via []*http.Request) error { return http.ErrUseLastResponse }}, logins: loginLimiter{clients: map[string]loginBucket{}, active: make(chan struct{}, loginConcurrency)}, sessions: map[string]Session{}}, nil
 }
 func random() string {
 	b := make([]byte, 32)
@@ -165,6 +169,11 @@ func render(w http.ResponseWriter, r *http.Request, p Page) {
 }
 func (s *Server) route(w http.ResponseWriter, r *http.Request) {
 	id, v := s.get(r)
+	if v.Token != "" && v.RequiresPasswordChange && r.URL.Path != "/account/password" && r.URL.Path != "/logout" {
+		w.Header().Set("HX-Redirect", "/account/password")
+		http.Redirect(w, r, "/account/password", http.StatusSeeOther)
+		return
+	}
 	if r.URL.Path == "/login" {
 		s.login(w, r, id, v)
 		return
@@ -339,6 +348,11 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request, id string, v Sess
 		_ = Login(v.CSRF, "Sesi halaman sudah berakhir. Silakan masuk kembali.").Render(r.Context(), w)
 		return
 	}
+	release := s.loginAdmission(w, r, v)
+	if release == nil {
+		return
+	}
+	defer release()
 	b, _, e := s.request(r.Context(), "", "POST", "/auth/login", map[string]string{"username": r.FormValue("username"), "password": r.FormValue("password")})
 	if e != nil {
 		w.WriteHeader(401)
@@ -346,16 +360,21 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request, id string, v Sess
 		return
 	}
 	var token struct {
-		Token  string    `json:"access_token"`
-		Expiry time.Time `json:"expires_at"`
+		RequiresPasswordChange bool      `json:"requires_password_change"`
+		Token                  string    `json:"access_token"`
+		Expiry                 time.Time `json:"expires_at"`
 	}
 	if json.Unmarshal(b, &token) != nil || token.Token == "" || !token.Expiry.After(time.Now()) {
 		http.Error(w, "Invalid backend login response", 502)
 		return
 	}
 	s.remove(id)
-	v = Session{Token: token.Token, CSRF: random(), User: r.FormValue("username"), Expiry: token.Expiry}
+	v = Session{RequiresPasswordChange: token.RequiresPasswordChange, Token: token.Token, CSRF: random(), User: r.FormValue("username"), Expiry: token.Expiry}
 	s.cookie(w, s.put(v), v.Expiry)
+	if v.RequiresPasswordChange {
+		http.Redirect(w, r, "/account/password", 303)
+		return
+	}
 	http.Redirect(w, r, "/", 303)
 }
 func parseFields(r *http.Request, kind string, edit bool) (Record, error) {
