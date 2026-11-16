@@ -110,3 +110,24 @@ func maintenanceHint(k string) string {
 	}
 	return "Re-detect the public NIC and endpoint, then reapply interfaces, peers, routes and firewall state."
 }
+
+// Gauge scales are presentation-only and never constrain backend resources.
+func gaugeValues(status Record, key string) (float64, float64) {
+	n, err := strconv.ParseFloat(value(status, key), 64)
+	if err != nil || n < 0 {
+		n = 0
+	}
+	scale := 100.0
+	for n > scale {
+		scale *= 10
+	}
+	return n, scale
+}
+func gaugeScale(status Record, key string) string {
+	_, scale := gaugeValues(status, key)
+	return strconv.FormatFloat(scale, 'f', 0, 64)
+}
+func gaugeArc(status Record, key string) string {
+	n, scale := gaugeValues(status, key)
+	return fmt.Sprintf("%.4f 100", n/scale*100)
+}
