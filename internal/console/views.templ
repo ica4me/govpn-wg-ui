@@ -129,6 +129,10 @@ templ Content(p Page) {
 }
 
 templ Dashboard(p Page) {
+	<div class="engine-note">
+		<img src="/static/wireguard.svg" alt="WireGuard" width="160" height="46"/>
+		<div><p>GoVPN runs on WireGuard Engine <span class="engine-version">{ WireGuardVersion }</span>.</p><p>Backend and UI developed by <a href="https://github.com/ica4me" target="_blank" rel="noopener noreferrer">ica4me</a> · <a href="https://github.com/ica4me/govpn-wg" target="_blank" rel="noopener noreferrer">Backend</a> · <a href="https://github.com/ica4me/govpn-wg-ui" target="_blank" rel="noopener noreferrer">UI</a></p></div>
+	</div>
 	<section id="live-status" hx-get={ "/" + p.Kind + "?partial=1" } hx-trigger="every 60s" hx-target="#content" hx-swap="innerHTML" aria-label="Live engine status">
 		<div class="live-label"><span class="status-dot"></span> Auto-refresh every 1 minute <span>Read-only monitoring</span></div>
 		<div class="metrics">

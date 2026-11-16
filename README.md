@@ -58,6 +58,18 @@ Ganti `10.0.0.10` dengan IP privat backend yang dapat dijangkau server UI. Backe
 
 Untuk akses langsung saat pengujian, ubah listen menjadi `0.0.0.0:8090`, lalu buka `http://IP-SERVER-UI:8090`. Untuk produksi, gunakan reverse proxy HTTPS, tetap bind loopback, dan set `GOVPN_COOKIE_SECURE: 'true'`. Login memakai akun backend.
 
+### Versi WireGuard di dashboard
+
+Ambil versi **kernel module** sekali di server backend (bukan `wg --version`, yang merupakan versi tools):
+
+```bash
+modinfo -F version wireguard
+```
+
+Simpan hasilnya di file `.env` pada direktori Compose UI, misalnya `GOVPN_WIREGUARD_VERSION=1.0.0`. Untuk backend terpisah, jalankan perintah di host backend lalu salin hasilnya ke `.env` UI. Nilai ini dibaca saat UI mulai, tanpa polling versi. Perbarui snapshot setelah upgrade WireGuard. Jika modul bawaan kernel tidak menyediakan versi, isi label versi kernel yang terverifikasi; jangan menebak.
+
+Logo dashboard disimpan lokal di `internal/console/static/wireguard.svg`, diambil dari [WireGuard](https://www.wireguard.com/img/wireguard.svg); tidak ada hotlink saat halaman dimuat.
+
 ## 3. Build dan jalankan
 
 ```bash
