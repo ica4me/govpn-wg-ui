@@ -328,7 +328,15 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request, id string, v Sess
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 8192)
 	if e := r.ParseForm(); e != nil || !s.csrfOK(r, v) {
-		http.Error(w, "Invalid login CSRF; reload login page", 403)
+		// A restart or expired pre-login session invalidates old forms. Reject
+		// this submission, but provide a fresh session/form for a safe retry.
+		if id == "" {
+			v = Session{CSRF: random(), Expiry: time.Now().Add(20 * time.Minute)}
+			s.cookie(w, s.put(v), v.Expiry)
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusForbidden)
+		_ = Login(v.CSRF, "Sesi halaman sudah berakhir. Silakan masuk kembali.").Render(r.Context(), w)
 		return
 	}
 	b, _, e := s.request(r.Context(), "", "POST", "/auth/login", map[string]string{"username": r.FormValue("username"), "password": r.FormValue("password")})

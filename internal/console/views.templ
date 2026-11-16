@@ -14,14 +14,14 @@ templ Login(csrf, err string) {
 			<main class="login-card">
 				<div class="brand"><img src="/static/vpn-logo.png" alt="" width="48" height="48"/><div><h1>GoVPN Console</h1><p>WireGuard network management</p></div></div>
 				<h2>Welcome back</h2>
-				<p class="muted">Sign in with your backend administrator account.</p>
+
 				if err!="" {
 					<div class="alert error" role="alert">
 						{ err }
 					</div>
 				}
-				<form method="post" action="/login"><input type="hidden" name="csrf_token" value={ csrf }/><label>Username<input name="username" value="admin" required autocomplete="username" maxlength="64"/></label><label>Password<input name="password" type="password" required autocomplete="current-password"/></label><button class="primary full" type="submit">Sign in →</button></form>
-				<p class="footnote">Your credentials authenticate directly with GoVPN. Tokens stay on the server.</p>
+				<form method="post" action="/login"><input type="hidden" name="csrf_token" value={ csrf }/><label>Username<input name="username" required autocomplete="username" maxlength="64"/></label><label>Password<input name="password" type="password" required autocomplete="current-password"/></label><button class="primary full" type="submit">Sign in →</button></form>
+
 			</main>
 		</body>
 	</html>

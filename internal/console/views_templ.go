@@ -72,7 +72,7 @@ func Login(csrf, err string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<body class=\"login-bg\"><main class=\"login-card\"><div class=\"brand\"><img src=\"/static/vpn-logo.png\" alt=\"\" width=\"48\" height=\"48\"><div><h1>GoVPN Console</h1><p>WireGuard network management</p></div></div><h2>Welcome back</h2><p class=\"muted\">Sign in with your backend administrator account.</p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<body class=\"login-bg\"><main class=\"login-card\"><div class=\"brand\"><img src=\"/static/vpn-logo.png\" alt=\"\" width=\"48\" height=\"48\"><div><h1>GoVPN Console</h1><p>WireGuard network management</p></div></div><h2>Welcome back</h2>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -108,7 +108,7 @@ func Login(csrf, err string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\"><label>Username<input name=\"username\" value=\"admin\" required autocomplete=\"username\" maxlength=\"64\"></label><label>Password<input name=\"password\" type=\"password\" required autocomplete=\"current-password\"></label><button class=\"primary full\" type=\"submit\">Sign in →</button></form><p class=\"footnote\">Your credentials authenticate directly with GoVPN. Tokens stay on the server.</p></main></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "\"><label>Username<input name=\"username\" required autocomplete=\"username\" maxlength=\"64\"></label><label>Password<input name=\"password\" type=\"password\" required autocomplete=\"current-password\"></label><button class=\"primary full\" type=\"submit\">Sign in →</button></form></main></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
