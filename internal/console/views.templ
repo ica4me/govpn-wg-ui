@@ -273,10 +273,13 @@ templ Resources(p Page) {
 							</td>
 							<td>
 								<div class="row-actions">
+									<button type="button" class="secondary action-trigger" popovertarget={ "actions-" + p.Kind + "-" + row.Text("id") } aria-label={ "Actions for " + row.Text("name") }>⋮</button>
+									<div id={ "actions-" + p.Kind + "-" + row.Text("id") } popover="auto" class="action-popover">
 									<a class="secondary compact" href={ templ.URL("/" + p.Kind + "/" + row.Text("id")) }>Manage</a>
 									if p.Kind!="groups" {
 										<a class="secondary compact" href={ templ.URL("/" + p.Kind + "/" + row.Text("id") + "/download/conf") }>.conf ↓</a>
 									}
+									</div>
 								</div>
 							</td>
 						</tr>
