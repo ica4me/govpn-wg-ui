@@ -10,6 +10,8 @@ Dibuat dengan **Go + Templ + HTMX + Tailwind CSS**, dijalankan menggunakan Docke
 
 UI bersifat opsional. Garis kontrol mengelola hub; trafik VPN lewat WireGuard. Default **split-tunnel**, akses antar-site dan LAN mengikuti izin yang dipilih.
 
+> **Pemula / mau coba cepat?** Ikuti [Panduan Cepat: Backend + UI dalam 1 VM](docs/quickstart-1-vm.md). Dari VM kosong sampai login di `http://IP-VM:8090` sekitar 10 menit.
+
 ## 1. Install tools dan Docker
 
 Untuk server Linux Debian/Ubuntu baru:
