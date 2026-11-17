@@ -1,0 +1,21 @@
+# Optional: run the UI on an existing Docker bridge network (e.g. the one
+# Nginx Proxy Manager uses) instead of host networking.
+#
+#   docker compose -f compose.yaml -f compose.bridge.yaml up -d --build
+#
+# Requires the backend to also listen on that bridge gateway, e.g. in
+# /etc/govpn/wg.env:  GOVPN_LISTEN=127.0.0.1:8080,172.18.0.1:8080
+# See README "Mode bridge (NPM)".
+services:
+  ui:
+    network_mode: !reset null
+    networks: [proxy]
+    ports:
+      - '127.0.0.1:${GOVPN_UI_PORT:-8090}:8090'
+    environment:
+      GOVPN_UI_LISTEN: '0.0.0.0:8090'
+      GOVPN_API_URL: '${GOVPN_API_URL:-http://172.18.0.1:8080/api/v1}'
+networks:
+  proxy:
+    name: '${GOVPN_DOCKER_NETWORK:-proxy-net}'
+    external: true
