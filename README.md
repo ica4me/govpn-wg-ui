@@ -26,37 +26,43 @@ sudo docker compose version
 
 **Jika dipasang pada server VPN/cloud yang sudah aktif**, ikuti [pengamanan Docker](docs/deployment.md#pengamanan-server-vpncloud) sebelum menjalankan installer agar jaringan host tidak terganggu. Jika Docker sudah tersedia, lewati instalasinya.
 
-## 2. Clone dan edit Compose
+## 2. Clone dan atur akses UI
 
 ```bash
 git clone https://github.com/ica4me/govpn-wg-ui.git
 cd govpn-wg-ui
-nano compose.yaml
 ```
 
-Edit nilai `environment` pada service `ui`:
+Pilih dulu **cara UI diakses**. Default-nya `127.0.0.1:8090` (loopback), artinya UI **hanya bisa dibuka dari server itu sendiri**. Kalau dibuka dari browser lain tanpa mengubah ini, halaman tidak akan terbuka.
 
-**UI di server yang sama dengan backend:**
+Cara paling mudah tanpa mengedit `compose.yaml`: buat file `.env` di folder `govpn-wg-ui`.
 
-```yaml
-environment:
-  GOVPN_API_URL: 'http://127.0.0.1:8080/api/v1'
-  GOVPN_UI_LISTEN: '127.0.0.1:8090'
-  GOVPN_COOKIE_SECURE: 'false'
+**A. Akses langsung via `http://IP-SERVER:8090` (pengujian / jaringan privat):**
+
+```bash
+cat > .env <<'EOF'
+GOVPN_UI_LISTEN=0.0.0.0:8090
+EOF
 ```
 
-**UI di server terpisah dari backend:**
+Pastikan port TCP **8090** dibuka di firewall host dan firewall/security group provider cloud.
 
-```yaml
-environment:
-  GOVPN_API_URL: 'http://10.0.0.10:8080/api/v1'
-  GOVPN_UI_LISTEN: '127.0.0.1:8090'
-  GOVPN_COOKIE_SECURE: 'false'
+**B. Produksi (disarankan):** biarkan default `127.0.0.1:8090`, lalu akses lewat reverse proxy HTTPS (mis. Nginx Proxy Manager → `http://127.0.0.1:8090`) dan set `GOVPN_COOKIE_SECURE=true` di `.env`. Atau lewat SSH tunnel dari laptop:
+
+```bash
+ssh -L 8090:127.0.0.1:8090 root@IP-SERVER
+# lalu buka http://127.0.0.1:8090 di laptop
+```
+
+**UI di server terpisah dari backend**, tambahkan juga di `.env`:
+
+```bash
+GOVPN_API_URL=http://10.0.0.10:8080/api/v1
 ```
 
 Ganti `10.0.0.10` dengan IP privat backend yang dapat dijangkau server UI. Backend harus listen pada IP tersebut; batasi akses API hanya dari server UI. Gunakan HTTPS atau jaringan privat terenkripsi untuk koneksi antarserver.
 
-Untuk akses langsung saat pengujian, ubah listen menjadi `0.0.0.0:8090`, lalu buka `http://IP-SERVER-UI:8090`. Untuk produksi, gunakan reverse proxy HTTPS, tetap bind loopback, dan set `GOVPN_COOKIE_SECURE: 'true'`. Login memakai akun backend.
+Semua variabel (`GOVPN_API_URL`, `GOVPN_UI_LISTEN`, `GOVPN_COOKIE_SECURE`, `GOVPN_TRUSTED_PROXY_CIDRS`, `GOVPN_WIREGUARD_VERSION`) bisa diisi di `.env`; nilai default ada di `compose.yaml`. Login memakai akun backend.
 
 ### Versi WireGuard di dashboard
 
@@ -76,7 +82,15 @@ Logo dashboard disimpan lokal di `internal/console/static/wireguard.svg`, diambi
 sudo docker compose build
 sudo docker compose up -d
 sudo docker compose ps
+ss -ltnp | grep 8090    # harus 0.0.0.0:8090 untuk akses langsung (opsi A)
 ```
+
+### UI tidak bisa diakses?
+
+- **`docker ps` tidak menampilkan port 8080/8090: normal.** Container UI memakai `network_mode: host`, jadi kolom PORTS selalu kosong. Port 8080 adalah backend `govpn-wg` (service systemd, bukan container) yang sengaja hanya listen di `127.0.0.1`.
+- `ss -ltnp | grep 8090` menunjukkan `127.0.0.1:8090` → UI hanya loopback. Pakai opsi A di atas, lalu `sudo docker compose up -d --force-recreate`.
+- `curl http://127.0.0.1:8090/healthz` harus `200` di server. Kalau 200 di server tapi tidak bisa dari luar → port 8090 tertutup di firewall host/provider.
+- Login gagal "backend unavailable" → cek `systemctl status govpn-wg` dan `GOVPN_API_URL`.
 
 Update dan paksa buat ulang container:
 
