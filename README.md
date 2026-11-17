@@ -47,12 +47,38 @@ EOF
 
 Pastikan port TCP **8090** dibuka di firewall host dan firewall/security group provider cloud.
 
-**B. Produksi (disarankan):** biarkan default `127.0.0.1:8090`, lalu akses lewat reverse proxy HTTPS (mis. Nginx Proxy Manager → `http://127.0.0.1:8090`) dan set `GOVPN_COOKIE_SECURE=true` di `.env`. Atau lewat SSH tunnel dari laptop:
+**B. Produksi (disarankan): lewat Nginx Proxy Manager (NPM) + HTTPS.**
+
+Jangan arahkan NPM ke port `8080`: itu REST API backend, bukan UI. Target UI selalu port **8090**.
+
+NPM biasanya jalan di container dengan jaringan bridge, jadi `127.0.0.1` di dalam NPM adalah container NPM itu sendiri, **bukan host**. Pakai IP gateway bridge jaringan NPM:
 
 ```bash
-ssh -L 8090:127.0.0.1:8090 root@IP-SERVER
-# lalu buka http://127.0.0.1:8090 di laptop
+# nama jaringan NPM, mis. proxy-net
+docker inspect npm -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{$v.Gateway}} {{$v.IPAddress}}{{"\n"}}{{end}}'
+# contoh hasil: proxy-net 172.18.0.1 172.18.0.5
 ```
+
+Isi `.env` UI (ganti IP sesuai hasil di atas):
+
+```bash
+GOVPN_UI_LISTEN=172.18.0.1:8090        # gateway bridge NPM: tidak terbuka ke internet
+GOVPN_COOKIE_SECURE=true                # wajib setelah diakses via https://
+GOVPN_TRUSTED_PROXY_CIDRS=172.18.0.5/32 # IP container NPM (opsional, untuk rate-limit per IP asli)
+```
+
+Lalu `sudo docker compose up -d --force-recreate` dan cek `ss -ltnp | grep 8090`.
+
+Di NPM → **Proxy Hosts → Add Proxy Host**:
+
+- Domain: domain UI, mis. `govpn.example.com`
+- Scheme `http`, Forward Hostname/IP `172.18.0.1`, Forward Port `8090`
+- Aktifkan *Block Common Exploits*
+- Tab SSL: *Request a new SSL Certificate* (Let's Encrypt), aktifkan *Force SSL* dan *HTTP/2*
+
+Buka `https://govpn.example.com`. Kalau login kembali ke halaman login terus, berarti `GOVPN_COOKIE_SECURE=true` tetapi browser masih HTTP; atau kebalikannya. Detail rate-limit/allowlist ada di [docs/deployment.md](docs/deployment.md).
+
+Alternatif tanpa domain: SSH tunnel dari laptop, `ssh -L 8090:127.0.0.1:8090 root@IP-SERVER`, lalu buka `http://127.0.0.1:8090` (pakai default listen loopback, `GOVPN_COOKIE_SECURE=false`).
 
 **UI di server terpisah dari backend**, tambahkan juga di `.env`:
 
@@ -88,7 +114,9 @@ ss -ltnp | grep 8090    # harus 0.0.0.0:8090 untuk akses langsung (opsi A)
 ### UI tidak bisa diakses?
 
 - **`docker ps` tidak menampilkan port 8080/8090: normal.** Container UI memakai `network_mode: host`, jadi kolom PORTS selalu kosong. Port 8080 adalah backend `govpn-wg` (service systemd, bukan container) yang sengaja hanya listen di `127.0.0.1`.
-- `ss -ltnp | grep 8090` menunjukkan `127.0.0.1:8090` → UI hanya loopback. Pakai opsi A di atas, lalu `sudo docker compose up -d --force-recreate`.
+- `ss -ltnp | grep 8090` menunjukkan `127.0.0.1:8090` → UI hanya loopback. Pakai opsi A atau B di atas, lalu `sudo docker compose up -d --force-recreate`.
+- Domain NPM membuka JSON/401 atau `404 page not found` → NPM diarahkan ke `8080` (API). Ubah ke port `8090`.
+- NPM `502 Bad Gateway` → Forward Host masih `127.0.0.1` (container NPM sendiri) atau UI tidak listen di IP gateway bridge.
 - `curl http://127.0.0.1:8090/healthz` harus `200` di server. Kalau 200 di server tapi tidak bisa dari luar → port 8090 tertutup di firewall host/provider.
 - Login gagal "backend unavailable" → cek `systemctl status govpn-wg` dan `GOVPN_API_URL`.
 
